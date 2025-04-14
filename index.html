@@ -202,16 +202,10 @@
                 if (obstacleLeft < -20) {
                     obstacle.remove();
                 } 
-                if (gameOver){
-                    clearInterval(setScore)
-                } else {
-                    const setScore = setInterval(() => {
+                setTimeout(()=>{
                     score++;
-                    scoreDisplay.textContent = `Score: ${score}`;
-                    }, 1000);
-                }
-                const scoreIncrease = setInterval(() => {
-                }, 5000);
+                    scoreDisplay.textContent =`Score: ${score}`
+                },10);
                 
                 // Check for collision
                 checkCollision(obstacle);
