@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DinoGame Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            position: relative;
+            width: 700px;
+            
+            height: 200px;
+            border-bottom: 2px solid #333;
+            overflow: hidden;
+            background: white ;
+            box-shadow: 0px 1px 2px #333 ;
+        }
+        
+        #dino {
+            position: absolute;
+            bottom: 0;
+            left: 50px;
+            width: 40px;
+            height: 50px;
+            border-radius: 3px;
+            object-fit: cover;
+        }
+        #dino img{
+            /* filter: drop-shadow(2px 2px 2px rgb(83, 78, 78)); */
+            height: 100%;
+            filter: grayscale(0.4);
+        }
+        
+        .obstacle {
+            position: absolute;
+            bottom: 0;
+            width: 20px;
+            height: 40px; 
+            background-size: cover ; 
+            background-position: center;
+            overflow: visible;   
+            background-repeat: no-repeat;
+            border-radius: 3px;
+            object-fit: contain;
+            object-position: center;
+
+        }
+        .obstacleImg{
+            height: 100%;
+            position: relative;
+            left: -10px;
+            z-index: 1;
+            filter: drop-shadow(10px 15px 2px rgb(61, 55, 55));
+        }
+        #score-display {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            font-weight: bold;
+            color: #d44;
+            display: none;
+            opacity: 1;
+            scale: 1.5;
+        }
+
+        #restart-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #b5cd32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+
+        #restart-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dino Game Clone</h1>
+    <div id="game-container">
+        <div id="dino"><img src="https://i.pinimg.com/736x/d7/cf/d7/d7cfd7fa57e2bbc4353d6d0c3b279597.jpg" alt="" srcset=""></div>
+        <div id="game-over">GAME OVER</div>
+    </div>
+    <div id="score-display">Score: 0</div>
+    <button id="restart-btn">Play Again</button>
+    
+    <script>
+        // Game variables
+        const dino = document.getElementById('dino');
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const gameOverElement = document.getElementById('game-over');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let isJumping = false;
+        let isGameOver = false;
+        let score = 0;
+        let obstacleMovingSpeed = 3;
+        let obstacleInterval = 2000; 
+        let lastObstacleTime = 0;
+        let animationFrameId;
+        let lastTime = 0;
+        let jumpRate = 3;
+        
+        // Event listeners
+        document.addEventListener('keydown', jump);
+        gameContainer.addEventListener('click', jump);
+        restartBtn.addEventListener('click', restartGame);
+        
+        // Jump function
+        function jump(event) {
+            if ((event.type === 'keydown' && (event.code === 'Space' || event.key === ' ' || event.key === 'ArrowUp')) || event.type === 'click') {
+                if (!isJumping && !isGameOver) {
+                    isJumping = true;
+                    let jumpHeight = 0;
+                    const jumpUp = setInterval(() => {
+                        if (jumpHeight > 120) {
+                            clearInterval(jumpUp);
+                            const jumpDown = setInterval(() => {
+                                if (jumpHeight < 5) {
+                                    clearInterval(jumpDown);
+                                    isJumping = false;
+                                    dino.style.bottom = '0px';
+                                } else {
+                                    jumpHeight -= jumpRate;
+                                    dino.style.bottom = jumpHeight + 'px';
+                                }
+                            }, 15);    
+                        } else {
+                            jumpHeight += jumpRate;
+                            dino.style.bottom = jumpHeight + 'px';
+                        }
+                    }, 15);
+                }
+            }
+        }
+        
+        // Create obstacles
+        function createObstacle(currentTime) {
+            if (currentTime - lastObstacleTime > obstacleInterval) {
+                lastObstacleTime = currentTime;
+                
+                const obstacle = document.createElement('div');
+                obstacle.classList.add('obstacle');
+                obstacle.style.left = "700px";
+                
+                const obstacleImg = document.createElement('img')
+                obstacleImg.classList.add('obstacleImg')
+                obstacleImg.src = 'https://static.vecteezy.com/system/resources/thumbnails/049/671/236/small_2x/a-black-silhouette-of-a-christmas-tree-free-png.png'
+
+                // Randomly adjust obstacle height for variety
+                const height = Math.floor(Math.random() * 30) + 30;
+                obstacle.style.height = height + 'px';
+                
+                gameContainer.appendChild(obstacle);
+                obstacle.appendChild(obstacleImg)
+
+                // Decrease interval as score increases (increases difficulty)
+                if (obstacleInterval > 800) {
+                    obstacleInterval -= 50;
+                    jumpRate +=0.1
+                }
+                // Increase speed as score increases
+                if (obstacleMovingSpeed < 8) {
+                    obstacleMovingSpeed += 0.1;
+                }
+            }
+        }
+        
+        // Move obstacles
+        function moveObstacles() {
+            const obstacles = document.querySelectorAll('.obstacle');
+            
+            obstacles.forEach(obstacle => {
+                const obstacleLeft = parseInt(obstacle.style.left);
+                obstacle.style.left = (obstacleLeft - obstacleMovingSpeed) + 'px';
+                
+                // Remove obstacle when it goes off-screen
+                if (obstacleLeft < -20) {
+                    obstacle.remove();
+                } 
+                if (gameOver){
+                    clearInterval(setScore)
+                } else {
+                    const setScore = setInterval(() => {
+                    score++;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    }, 1000);
+                }
+                const scoreIncrease = setInterval(() => {
+                }, 5000);
+                
+                // Check for collision
+                checkCollision(obstacle);
+            });
+        }
+        
+        // Check for collision
+        function checkCollision(obstacle) {
+            const dinoRect = dino.getBoundingClientRect();
+            const obstacleRect = obstacle.getBoundingClientRect();
+            
+            if (
+                dinoRect.right > obstacleRect.left &&
+                dinoRect.left < obstacleRect.right &&
+                dinoRect.bottom > obstacleRect.top &&
+                dinoRect.top < obstacleRect.bottom
+            ) {
+                gameOver();
+            }
+        }
+        
+        // Game over
+        function gameOver() {
+            isGameOver = true;
+            gameOverElement.style.display = 'block';
+            restartBtn.style.display = 'block';
+            cancelAnimationFrame(animationFrameId);
+        }
+        
+        // Restart game
+        function restartGame() {
+            // Reset variables
+            isGameOver = false;
+            score = 0;
+            obstacleMovingSpeed = 3;
+            obstacleInterval = 2000;
+            lastObstacleTime = 0;
+            let jumpRate = 3
+            
+            // Clear existing obstacles
+            const obstacles = document.querySelectorAll('.obstacle');
+            obstacles.forEach(obstacle => obstacle.remove());
+            
+            // Reset UI
+            scoreDisplay.textContent = 'Score: 0';
+            gameOverElement.style.display = 'none';
+            restartBtn.style.display = 'none';
+            
+            // Start game
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Game loop
+        function gameLoop(currentTime) {
+            if (lastTime === 0) {
+                lastTime = currentTime;
+            }
+            
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            if (!isGameOver) {
+                createObstacle(currentTime);
+                moveObstacles();
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Start the game
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
